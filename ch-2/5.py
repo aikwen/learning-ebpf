@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from bcc import BPF
 from time import sleep
+from bcc.syscall import syscall_name
 
 program = r"""
 BPF_HASH(counter_table);
@@ -26,7 +27,12 @@ b.attach_raw_tracepoint(tp="sys_enter", fn_name="hello")
 
 while True:
     sleep(2)
-    s = ""
-    for k,v in b["counter_table"].items():
-        s += f"ID {k.value}: {v.value}\t"
-    print(s)
+    print("\n" + "="*40)
+    for k, v in b["counter_table"].items():
+        try:
+            raw_name = syscall_name(k.value)
+            name = raw_name.decode() if raw_name else f"Unknown({k.value})"
+        except:
+            name = f"Unknown({k.value})"
+
+        print(f"{name:<20} : {v.value}")
